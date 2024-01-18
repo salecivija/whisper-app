@@ -1,28 +1,27 @@
-
 import streamlit as st
-import whisper
-import tempfile
-import os
+import speech_recognition as sr
 
-st.title("Multi-lingual Transcription using Whisper")
+st.title("Multi-lingual Transcription using SpeechRecognition")
 
 audio_file = st.file_uploader("Upload your audio", type=["wav", "mp3", "m4a"])
-model = whisper.load_model("base")
 
 if st.sidebar.button("Transcribe Audio"):
     if audio_file is not None:
         st.sidebar.success("Transcribing...")
-        with tempfile.NamedTemporaryFile(delete=False) as temp_audio:
-            temp_audio.write(audio_file.read())
+        recognizer = sr.Recognizer()
 
-        # Get the absolute path of the temporary audio file
-        audio_file_path = os.path.abspath(temp_audio.name)
+        with audio_file as source:
+            audio_data = recognizer.record(source)
 
-        transcription = model.transcribe(audio_file_path)
-        st.sidebar.success("Transcription complete")
-        st.markdown(transcription["text"])
+        try:
+            transcription = recognizer.recognize_google(audio_data)
+            st.sidebar.success("Transcription complete")
+            st.markdown(transcription)
 
-        # Clean up the temporary file after processing
-        os.remove(audio_file_path)
+        except sr.UnknownValueError:
+            st.sidebar.error("Could not understand audio")
+        except sr.RequestError as e:
+            st.sidebar.error(f"Error connecting to Google Web Speech API: {e}")
+
     else:
         st.sidebar.error("Please upload an audio file.")
